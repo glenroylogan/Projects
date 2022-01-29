@@ -1,0 +1,57 @@
+/* ==================================================
+
+Tutorial Title:    Set Div Background Image from Image Source with jQuery
+Tutorial Link:    http://html-tuts.com/?p=9928
+
+=================================================== */
+
+body {
+	margin: 0;
+	padding: 0;
+	font-family: Arial, sans-serif;
+	font-size: 14px;
+	line-height: 150%;
+	background: #eee;
+}
+img {
+	max-width: 100%;
+	height: auto;
+}
+.headerContainer,
+.bodyContainer,
+.footerContainer {
+	max-width: 960px;
+	margin: 0 auto;
+	background: #FFF;
+}
+.padding {
+	padding: 20px;
+}
+.bodyContainer {
+	min-height: 500px;
+}
+.footerContainerWrapper {
+	clear: both;
+}
+
+
+.backgroundDiv {
+	background: #ccc;
+	background-position: left top;
+	background-size: cover;
+	padding: 100px 50px;
+}
+.backgroundDiv span {
+	background: rgba(255, 255, 255, 0.5);
+	display: inline-block;
+	padding: 10px;
+	border-radius: 10px;
+}
+
+/* Uncomment if you want to not display the other image container
+
+.imageDiv {
+	display: none;
+}
+
+*/
