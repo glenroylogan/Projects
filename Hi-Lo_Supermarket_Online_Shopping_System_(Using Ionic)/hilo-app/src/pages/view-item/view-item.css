@@ -1,0 +1,12 @@
+page-view-item .category {
+  color: #007aff;
+  font-style: italic;
+  font-size: 120%; }
+page-view-item .description {
+  color: #4d4d4d;
+  font-style: italic;
+  font-size: 110%; }
+page-view-item img {
+  max-height: 500px; }
+
+/*# sourceMappingURL=view-item.css.map */

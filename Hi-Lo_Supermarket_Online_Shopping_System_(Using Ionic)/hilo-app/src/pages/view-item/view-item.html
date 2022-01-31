@@ -1,0 +1,78 @@
+<!--
+  Generated template for the ViewItemPage page.
+
+  See http://ionicframework.com/docs/components/#navigation for more info on
+  Ionic pages and navigation.
+-->
+<ion-header>
+
+  <ion-navbar>
+    <ion-title>Purchase: {{ getItem().getName()}}</ion-title>
+
+    <ion-buttons end>
+      <button ion-button clear (click)="showCart()">
+        <ion-badge color="#007aff">{{ cart.getCount()}}</ion-badge>
+        <ion-icon class="cart" name="cart" (click)="showCart()"></ion-icon>
+      </button>
+    </ion-buttons>
+  </ion-navbar>
+
+
+
+</ion-header>
+
+
+<ion-content padding>
+  <ion-grid>
+
+    <!--1st Row-->
+    <ion-row>
+        <ion-title>{{item.getName()}}</ion-title>
+    </ion-row>
+
+    <!--2nd Row-->
+    <ion-row>
+      <!--Picture Section-->
+      <ion-col col-6 >
+        <img src={{item.getAvatar()}}>
+      </ion-col>
+
+      <!--Purchase Section-->
+      <ion-col col-6>
+        <p>
+           {{getInput()}} {{item.getUnit(getInput())}} = ${{getCurrPrice().toFixed(2)}} <br/>
+        </p>
+
+          <!--Quantity Input-->
+          <ion-item>
+            <ion-label stacked>Qty: </ion-label>
+            <ion-input type="number" min=1 max={{item.getQuantity()}} step=1 [(ngModel)]="inputValue"></ion-input>
+          </ion-item>
+          <br/>
+
+          <!--Add to Cart button-->
+          <button ion-button (click)="addtoCart()">
+            <ion-icon name="cart"></ion-icon>
+            Add to Cart
+          </button>
+
+      </ion-col>
+    </ion-row>
+
+    <!--Spacing-->
+    <br/><br/>
+
+    <!--3rd Row-->
+    <ion-row>
+      <ion-col>
+        <p class="category">Category: {{item.getCategory()}}</p>
+        <p class="description"> DESCRIPTION </p>
+
+        <p>{{item.getDescription()}}</p>
+
+      </ion-col>
+    </ion-row>
+
+  </ion-grid>
+
+</ion-content>

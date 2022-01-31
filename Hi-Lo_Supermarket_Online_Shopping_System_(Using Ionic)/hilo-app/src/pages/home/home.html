@@ -1,0 +1,23 @@
+<ion-header>
+  <ion-navbar>
+    <button ion-button menuToggle>
+      <ion-icon name="menu"></ion-icon>
+    </button>
+    <ion-title>Home</ion-title>
+
+    <ion-buttons end>
+      <button ion-button clear (click)="showCart()">
+        <ion-badge color="#007aff">{{ cart.getCount()}}</ion-badge>
+        <ion-icon class="cart" name="cart" (click)="showCart()"></ion-icon>
+      </button>
+    </ion-buttons>
+
+  </ion-navbar>
+</ion-header>
+
+<ion-content class="card-background-page" padding>
+  <ion-card *ngFor="let cat of cats">
+    <img class="catImg" src={{getAvatar(cat)}}/>
+    <div class="card-title">{{cat}}</div>
+  </ion-card>
+</ion-content>
