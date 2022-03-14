@@ -1,0 +1,968 @@
+model Telegram
+
+enum MessageStatus {Read,Delivered,Undelivered,Sent,Heard,Unheard,Delete}
+enum CallType {Voice,Video}
+enum ChatHistory {ExportChat,ArchiveChat,ClearChat,DeleteChat}
+enum ReadReceipts{On,Off}
+enum whichContactsCanViewSetting{Everybody,MyContacts,Nobody}
+--enum MediaType {Document, Audio, Image, VoiceNote, Link, Text, Poll, Video, SecretChat}
+enum MediaType {Document, Audio, Image, VoiceNote, Link, Text, Poll, Video}
+enum Status {Online,Offline}
+enum CallStatus{Ringing,Connected, Disconnected, Unanswered, HangupCall, Routing, Answered,Declined}
+enum DateTime{Day,Month,Year,Hour,Minute,Second}
+
+
+/*Classes*/
+class Group < Receiver
+attributes
+	nbrOfPersons: Integer
+	Name: String 
+	characterCount: Integer 	
+	Description: String  
+	chatHistory: ChatHistory 
+	InviteLink: String
+	groupMemberCapacity: Integer
+	groupBots: Integer
+operations
+	acceptUser()--: User // Accepts A new user to be apart of the group created by the user 	
+end
+
+class Administrator < Role 
+attributes	
+	isAdmin: Boolean
+	groupMemberAdmins : Integer	
+operations
+
+	assignGroupAdmin() 	
+	/*	
+	pre noAdminAssigned: 
+		if isAdmin = false  	
+			then self.groupAdmin -> isEmpty() --select(n | n.nbrOfPersons > 0)	-> size() = 1
+		else
+			isAdmin = true  
+		endif
+
+	post adminIsAssigned: 
+		if isAdmin = true  	
+			then self.groupAdmin -> select(n | n.nbrOfPersons > 0)	-> size() = 1
+		else
+			isAdmin = false 
+		endif
+	*/ 
+
+	addGroupMembers()	
+	deleteGroupMembers()
+	deleteGroup()
+	invite()
+	
+end
+
+class User 
+attributes	
+	number: String 
+	name: String 
+	--userName: String 	 
+	age: Integer 
+	--status: Status
+	
+operations	
+	addProfile(name: String, number: String, age: Integer)--: Profile 
+	begin
+		self.name := name;
+		self.number := number;
+		self.age := age;	
+	end 
+	
+	deleteProfile(name: String, number: String, age: Integer): Telegram 
+	begin
+		--self.name := name;
+		--self.number := number;
+		--self.age := age; 
+
+		-- To Be Edited 
+		/*
+		declare t: Telegram;
+        t := new Telegram();		 
+		t.name := name;
+		t.number:= number; 
+		t.age:= age; 
+		--u.addProfile(name,number,age);
+		t.deactivateAccount(name,number,age);
+		insert(t,self) into userAccount;  
+		result := t;
+		*/
+	end 
+end
+
+class Message 
+attributes			
+	Media: MediaType init: MediaType::Image 
+	Status: MessageStatus init: MessageStatus::Read
+	date: Date   
+	timestamp: DateTime init: DateTime::Hour 
+	chatHistory: ChatHistory init: ChatHistory::ExportChat
+	fileSizeInGB: Integer init: 2
+	characterLength: Integer init: 500
+	validLink: Boolean init: true 
+	chatExist: Boolean init: true
+operations
+	messageDelivered()
+	begin self.Status := #Delivered end 	
+    messageread()
+	begin self.Status := #Read end 
+	sendMessage()
+	begin self.Status := #Sent end 
+	deleteMessage()
+	begin self.Status := #Delete end 
+
+/*
+statemachines
+psm SendMessageState
+	states
+        start: initial
+        initialised [self.Media = MediaType::Document or self.Media = MediaType::Audio or self.Media = MediaType::Image or self.Media = MediaType::VoiceNote or self.Media = MediaType::Video and self.fileSizeInGB <= 2]       
+		Sent [Status = #Sent]       
+		Delivered [Status = #Delivered] 
+        DeleteChat:final
+        Read:final
+    transitions    
+        start -> initialised {create}
+        initialised -> Sent {sendMessage()}
+        Sent ->  Delivered {messageDelivered()}
+		Sent -> DeleteChat {deleteMessage()} 
+        Delivered -> DeleteChat {deleteMessage()} 
+        Delivered -> Read {messageread()}
+    end
+*/ 
+
+
+end
+
+class Channel < Group 
+attributes
+operations
+end 
+
+class Chat < Message
+attributes
+	
+operations
+end 
+
+class SecretChat < Message 
+attributes
+	isOn: Boolean 	
+operations
+	selfDestruct(d: Date)
+end 
+
+class Date
+attributes
+	Day: Integer 
+	Month: Integer 
+	Year: Integer 
+	Hour: Integer
+	Minute: Integer
+	Second: Integer 	
+end
+
+class Contact 
+attributes	
+	contactCount: Integer  init: 1 
+	name: String 
+	username: String 
+	number: String 	
+	validNumber: Boolean  init: true 
+operations	
+	addContact(contactName: String, contactNumber: String)
+	begin
+		self.name:= contactName; 
+		self.number:= contactNumber; 
+	end 
+	
+	--Contact Name cannot be set to null
+	pre contactNameIsNotNull: self.user -> select(c|c.name = contactName <> null ) -> size() = 0 
+
+	--contact number does not exist 	
+	pre contactNumberDoesNotExist:self.user->select(n|n.number = contactNumber) -> size() = 0	
+
+	--contact number is unique	
+	pre contactNumberIsUnique: self.user->select(n|n.number = contactNumber) -> isUnique(contactNumber)	 
+
+	--phone number is valid 
+	pre isValidPhoneNumber: self.validNumber = true 
+
+	-- Contact List to be updated
+	post contactListToBeUpdated : self.user -> size() = self.user@pre->size()-1 
+
+	-- contact is now added 
+	post contactAdded: self.user->select (n| n.name = contactName and n.number = contactNumber) -> size() = 1 
+	
+	
+
+	deleteContact(contactName: String, contactNumber: String)		
+	-- contact Exists
+	pre contactExists: self.user -> select (n| n.name = contactName and n.number = contactNumber) -> size() = 1
+
+	-- contact is deleted
+	post contactDeleted:
+            let u = self.user -> select (n| n.name = contactName and n.number = contactNumber) -> size() - 1
+            in            
+            user@pre = user->excluding(u)			
+	post contactListIsEmpty: self.user -> select(n| n.name = contactName and n.number = contactNumber) -> isEmpty() -- this post condition is for if a user contact list is empty. 	
+
+	viewContact(contactNumber: String,userName: String ,name: String)
+	begin				
+		self.name:= name; 
+		self.number:= contactNumber; 
+		self.username:= userName;							
+	end
+
+end
+
+class Call  
+attributes
+	nbrOfPersons: Integer
+	callType: CallType 
+	status: CallStatus 
+operations
+	initialise()
+	begin 
+		self.callType := #Voice;
+		self.callType := #Video;
+	end
+	
+	answered()
+	begin self.status := #Answered; end
+	
+	unanswered()
+	begin self.status := #Unanswered; end
+
+	
+	declined()
+	begin self.status := #Declined; end
+	
+	
+	ringing()
+	begin self.status := #Ringing; end
+	
+	connected()
+	begin self.status := #Connected; end
+	
+	disconnected()
+	begin self.status := #Disconnected; end
+
+	
+	routingCall()
+	begin self.status := #Routing; end
+	
+	
+	hangUpCall()
+	begin self.status := #HangupCall; end
+
+/*
+statemachines
+    psm CallState
+    states		
+        start: initial			
+		initialised [nbrOfPersons > 0 and callType = #Voice or callType = #Video]					 				
+		Ringing [callType = #Voice or callType = #Video]
+		Connected [callType = #Voice or callType = #Video]	
+		disconnect: final 
+		Declined: final 
+		HangUpCall: final		
+		Unanswered: final 				
+    transitions		
+        start -> initialised {create}		
+		initialised -> initialised {routingCall()}			
+		initialised -> Declined {declined()}		
+		initialised -> Ringing {ringing()}
+		
+		Ringing -> Connected{answered()}
+		Ringing -> Declined {declined()}
+		Ringing -> Unanswered {unanswered()}
+		Ringing -> disconnect {disconnected()}	
+
+		Connected -> HangUpCall {hangUpCall()}			
+    end
+*/ 
+end
+
+class CallLog
+attributes
+	recordsCollection: Integer 
+operations	
+	storeCallRecords()
+end
+
+class Device
+attributes	
+	galleryAccessPermission: Boolean
+	cameraAccessPermission: Boolean
+	microphoneAccessPermission: Boolean
+end
+
+class privacySettings 
+attributes
+	
+	turnOnReceipts: ReadReceipts
+	blockedUsers: Integer 
+	phoneNumber: whichContactsCanViewSetting
+	lastSeenAndOnline: whichContactsCanViewSetting
+	viewProfilePhoto: whichContactsCanViewSetting	
+	forwardedMessages: whichContactsCanViewSetting	
+	groups: whichContactsCanViewSetting		
+end
+
+class Telegram  
+attributes
+	number: String 
+	name: String 	 
+	age: Integer
+operations
+	createAccount(name: String,number: String, age: Integer): User 
+	begin
+		declare u: User;
+        u := new User();		 
+		u.name := name;
+		u.number:= number; 
+		u.age:= age; 
+		u.addProfile(name,number,age);
+		--insert(self,u) into userAccount;  
+		result := u;
+	end	
+
+	restoreAccount(name: String,number: String, age: Integer)
+	begin
+		self.name := name;
+		self.number := number;
+		self.age := age; 
+	end 
+
+	deactivateAccount(name: String,number: String, age: Integer)
+	begin
+		self.name := name;
+		self.number := number;
+		self.age := age; 
+	end 
+
+end 
+
+class Receiver
+attributes	
+operations	
+end 
+
+class Role 
+attributes	
+operations	
+end 
+
+class RegularUser < Role 
+attributes	
+operations	
+end 
+
+class GroupOwner < Role 
+attributes	
+operations	
+end 
+
+class Profile < Receiver
+attributes
+	/*
+	number: String 
+	name: String 	
+	age: Integer
+	*/ 
+	
+	profilePicture: MediaType init: #Image
+	characterCount: Integer
+	isDeleted : Boolean
+	nbrOfUserProfiles: Integer
+	userName: String
+	status: Status
+operations
+
+	editBio(bio: String, username: String)
+
+	--bio name must be added:
+	pre bioMustBeAdded: self.user -> select (n| n.name = bio and self.characterCount < 500) -> size() = 1 
+
+	--bio name has a maximum of  70 characters
+	pre maxBioCharacterCount: self.characterCount <= 70  
+
+	-- Bio name is updated 
+	post: self.user -> select (n| n.name = bio = true and self.characterCount < 500 = true)  -> size() = 1 	
+	
+
+	editProfilePicture()
+	-- app has to have permission/access to use gallery and camera	
+	pre permissionToAccessGalleryOrCamera:self.user.owns->select(access | access.galleryAccessPermission = true or access.cameraAccessPermission = true) -> size() = 1	
+
+	-- a profile picture would have had to exist before inorder to update it to a new one
+	pre profilePictureExists: 	
+	if self.user -> notEmpty()
+		then self.profilePicture = MediaType::Image = true
+	else
+		self.profilePicture = MediaType::Image = false 
+	endif 
+	
+	-- profile picture is added 
+	post profilePictureIsUpdated: 	
+	if self.user@pre-> notEmpty()
+		then self.profilePicture = MediaType::Image = true and self.user.owns ->select(access | access.galleryAccessPermission = true or access.cameraAccessPermission = true) -> size() = 1
+	else
+		self.profilePicture = MediaType::Image = false 
+	endif 
+		
+
+	editUserName(userName: String)	
+	--minimum character count for the username must be 5 or more
+	pre minUserNameCharacters: self.user -> select (n| n.name = userName and self.characterCount > 5) -> size() = 1 
+
+	--user name must be unique 
+	pre userNameIsUnique: self.user -> select (n| n.name = userName) -> isUnique(userName)  
+
+	-- username is added
+	post userNameIsAdded: self.user@pre -> select (n| n.name = userName and self.characterCount < 500) -> size() = 1 
+	
+	
+
+	changePhoneNumber(phoneNumber: String)
+	--previous phone number must exist
+	pre phoneNumberExists: self.user -> select (n| n.number = phoneNumber) -> exists(phoneNumber = true)
+
+	-- phone number is valid 
+	pre phoneNumberIsValid: self.user.numbers  -> select(v | v.validNumber = true) -> size() = 1
+	
+	--phone number is unique 
+	pre phoneNumberIsUnique: self.user -> select (n| n.number = phoneNumber) -> isUnique(phoneNumber) 
+
+	-- phone number has been added 
+	post phoneNumberIsUpdated: self.user -> select (n| n.number = phoneNumber) -> size() = 1 
+
+	------------------------------------------Operations Taken From the User Class -------------------------------------------------------------
+
+	sendMessage(message: Message)	
+	-- Contacts can be searched for via names in contact list or user name 
+	--pre accountMustExist: self.contacts -> select(c | c.name = true or c.username = true) -> size() = 1 
+	pre accountMustExist: self.user.numbers  -> select(c | c.name = true or c.username = true) -> size() = 1 
+
+		
+	--All MediaTypes excluding Text,Link and Polls limits are a maximum of 2GB 
+	pre maxMediaFileSize: self.user.message -> select(m | m.Media = MediaType::Document or m.Media = MediaType::Audio or m.Media = MediaType::Image 
+		or m.Media = MediaType::VoiceNote or m.Media = MediaType::Video and m.fileSizeInGB <= 2) -> size() = 1	
+
+	--maximum text message character length is 4096 characters
+	pre maxTextMessageLength: self.user.message -> select(t | t.Media = MediaType::Text and t.characterLength <= 4096) -> size() = 1
+
+	-- all Links must be valid 
+	pre linkMustBeValid: self.user.message -> forAll(m| m.Media = MediaType::Link and message.validLink = true)
+
+	-- messages from user are confirmed to be sent 
+	post confirmMessageWasSent: self.user.message@pre -> select(s |s.Status = MessageStatus::Sent)-> size() = 1
+
+	--Time when messages were sent is recorded 
+	post timeStampMessageWasSent: self.user.message@pre -> select(t |t.timestamp = DateTime::Day and t.timestamp = DateTime::Month 
+		and t.timestamp = DateTime::Year and t.timestamp = DateTime::Hour and t.timestamp = DateTime::Minute and t.timestamp = DateTime::Second) -> size() = 1 
+
+	
+	BroadcastMessage(contacts: Integer)
+	-- Contacts can be searched for via names in contact list or user name 
+	pre accountMustExist: self.user.numbers  -> select(c | c.name = true or c.username = true) -> size() = 1 
+
+	-- at least one contact must be selected to broadcast message 	
+	pre selectContact: 
+		if contacts >= 1
+			then self.user.numbers  -> select(c| c.contactCount = contacts ) -> size() = 1
+		else
+			 contacts < 1 and self.user.numbers  -> select(c| c.contactCount = contacts ) -> size() = 0
+		endif 
+
+	-- messages of all types that are less than 2GB are sent to all selected contacts 
+	post sendMessaageToAllSelectedContacts: self.user.message@pre -> forAll(m | m.Media = MediaType::Document or m.Media = MediaType::Audio or m.Media = MediaType::Image or m.Media = MediaType::VoiceNote or m.Media = MediaType::Video and m.fileSizeInGB <= 2)
+
+	-- messages from user are confirmed to be sent 
+	post confirmMessageWasSent: self.user.message@pre -> select(s |s.Status = MessageStatus::Sent)-> size() = 1	
+
+	
+	deleteMessage() 
+	--chat must exist 
+	pre chatMustExist: self.user.message -> select(d| d.chatExist = true) -> size() = 1
+
+	--message must been sent  
+	pre messageWasSent: self.user.message -> select(s | s.Status = MessageStatus::Sent) -> size() = 1
+
+	-- messageIsDeleted 		
+	post messageIsDeleted: 
+		let d =  
+			self.user.message@pre->select(m | m.Media = MediaType::Document or m.Media = MediaType::Audio or m.Media = MediaType::Image or m.Media = MediaType::VoiceNote or m.Media = MediaType::Video) -> size() = 1	
+		in 
+			self.user.message@pre = self.user.message ->excluding(d) = true 
+
+	
+	createGroup (name: String, g: Group, characterCount: Integer)--:Group 
+	--contact must exist
+	pre accountMustExist: self.user.numbers  -> select(c | c.name = true or c.username = true) -> size() = 1 
+
+	--group name character must be greater than 0
+	pre groupNameCharacters: self.user.group -> select(n| n.Name = name and n.characterCount > 0) -> size() = 1 
+
+	--group capacity must be between 1 and 200,000	
+	pre groupCapacity: g.groupMemberCapacity >= 1 and g.groupMemberCapacity <= 200000
+
+	--number of persons in a group must not exceed the group capacity
+	pre numberOfPersonsInGroup: g.nbrOfPersons < g.groupMemberCapacity
+
+	--user is now an Administrator for the group they created
+	post isNowAdministrator: self.user.group.administrator -> select(i | i.isAdmin = true) -> size() = 1	
+
+	--the group is now created
+	post groupExists: self.user.group -> select(n |n.Name = name) -> exists(name = true) 
+
+	
+
+	joinGroup(name: String,groupMemberCount: Integer,g:Group)--: Group 
+	--group must exist 
+	pre groupExists: self.user.group -> select(n |n.Name = name) -> exists(name = true) 	
+
+	-- contact must be added to a group via link or be added by an administrator
+	
+	--pre addedToGroupViaLinkOrAdmin: 
+		--if self.message -> select(m| m.Media = MediaType::Link and message.validLink = true)--or self.group.administrator -> select(i | i.isAdmin = true) -> size() = 1 
+			--then self.group -> size() =  self.group -> select(n |n.nbrOfPersons = groupMemberCount) -> size() = 1
+		--else
+			--self.group -> size() =  self.group -> select(n |n.nbrOfPersons = groupMemberCount) -> size() = 0
+		--endif 	
+	 
+	
+	--group capacity must be between 1 and 200,000	
+	pre groupCapacity: g.groupMemberCapacity >= 1 and g.groupMemberCapacity <= 200000
+
+	--user is now a member of the group 
+	post addNewGroupMember: self.user.group -> size() =  self.user.group -> select(n |n.nbrOfPersons = groupMemberCount) -> size() = 1	
+
+	
+	addToGroup(name: String,groupMemberCount: Integer,g: Group)
+	--contact must exist  (contacts can be added either via contact list or by user name)
+	pre accountMustExist: self.user.numbers  -> select(c | c.name = true or c.username = true) -> size() = 1 
+
+	--group capacity must be less than 200,000	members 
+	pre groupCapacity: g.groupMemberCapacity <= 200000
+
+	--user is now a member of the group 
+	post addNewGroupMember: self.user.group -> size() =  self.user.group -> select(n |n.nbrOfPersons = groupMemberCount) -> size() = 1
+
+	
+	leaveGroup(name: String,groupMemberCount: Integer)--: Group 
+
+	--group must exist
+	pre groupExists: self.user.group -> select(n |n.Name = name) -> exists(name = true) 	
+
+	--user must be an existing member of the group 
+	pre userMustExistInGroup: self.user.numbers  -> select(c | c.name = true or c.username = true) -> exists(name = true or username = true)	
+
+	--user is no longer a member of the group
+	post deleteGroupMember: 
+		let d =  
+		
+			self.user.group -> size() =  self.user.group @pre-> select(n |n.nbrOfPersons = groupMemberCount) -> size() - 1
+		in 
+			self.user.group @pre = self.user.group ->excluding(d) = true 
+
+
+			
+	removeFromGroup(a:Administrator, groupMemberCount: Integer)
+	--User has to be an admin 
+	pre userIsAnAdmin: a.isAdmin = true 
+
+	--user is no longer a member of the group
+	post deleteGroupMember: 
+		let d =  
+		
+			self.user.group -> size() =  self.user.group @pre-> select(n |n.nbrOfPersons = groupMemberCount) -> size() - 1
+		in 
+			self.user.group@pre = self.user.group ->excluding(d) = true
+
+	
+
+	makeCall(contactNumber: String, userName: String, name: String): Contact 	
+	begin		
+		declare c: Contact;
+        c := new Contact();		 
+		c.name := name;
+		c.username:= userName; 
+		c.number := contactNumber;
+		c.viewContact(contactNumber,userName,name);				
+		--insert(self,c) into profileContacts;		
+		result := c;			
+	end 
+	
+	--User must be online to make call
+	pre userMustBeOnline: self.status = #Online
+
+	--account must exist	
+	pre accountMustExist: self.user.numbers  -> forAll(c |c.username = userName or c.name= name) 
+
+	--username must be unique
+	pre usernameMustBeUnique: self.user.numbers  -> select(c |c.username = userName) -> isUnique(userName)	
+
+	--contact phone number must be valid 	
+	pre contactNumberMustBeValid:  self.user.numbers  -> forAll(v | v.validNumber = true) 
+
+	--contact phone number must be unique
+	pre contactNumberMustBeUnique: self.user.numbers  ->select(n|n.number = contactNumber) -> isUnique(contactNumber)
+	
+	--phone call type must be either voice or video	
+	pre callTypeMustBeVoiceOrVideo:  self.user.audioCalls -> forAll(c | c.callType = #Voice) or  self.user.videoCalls -> forAll(c | c.callType = #Video) 	
+
+			
+	--if call is answered by contact then a connection is established 
+	post callIsAnsweredByContact:		
+		if self.user.audioCalls -> forAll(c | c.callType = #Voice)  or  self.user.videoCalls -> forAll(c | c.callType = #Video) 		
+				then self.user.numbers  ->forAll(n|n.number = contactNumber) and self.user.numbers.call -> forAll(s | s.status = #Connected) 
+			else	
+				self.user.numbers.call -> forAll(s | s.status = #Disconnected) 
+			endif	
+
+	--call has ended 
+	post callHasEnded:		
+		if self.user.audioCalls -> forAll(c | c.callType = #Voice)  or  self.user.videoCalls -> forAll(c | c.callType = #Video) 
+				then self.user.numbers.call -> forAll(s | s.status = #Disconnected) 
+			else	
+				self.user.numbers.call -> forAll(s | s.status = #HangupCall) 
+			endif	
+	
+	
+	
+	answerCall(c: Call) 
+	--callType must be set to ringing
+	pre callTypeMustBeSetToRinging:
+		if c.callType = #Voice or c.callType = #Video
+			then c.status = #Ringing
+		else	
+			c.status = #Unanswered
+		endif
+
+	--call connect is established   
+	post callConnectionIsEstablished: 
+		if c.callType = #Voice or c.callType = #Video
+			then c.status = #Connected
+		else	
+			c.status = #Disconnected
+		endif	
+
+	endCall(c: Call)	
+	--call connect is established   
+	pre callConnectionIsEstablished: 
+		if c.callType = #Voice or c.callType = #Video
+			then c.status = #Connected
+		else	
+			c.status = #Disconnected
+		endif
+
+	--call has ended 
+	post callHasEnded:
+		if c.callType = #Voice or c.callType = #Video
+				then c.status = #HangupCall
+			else	
+				c.status = #Disconnected
+			endif
+
+	searchContact(contactNumber: String, userName: String, name: String): Contact 	
+	begin 
+		declare c: Contact;
+        c := new Contact();		 
+		c.name := name;
+		c.username:= userName; 
+		c.number := contactNumber;		
+		--c.viewContact(contactNumber,userName,name);
+		self.makeCall(contactNumber,userName,name);					
+		--insert(self,c) into profileContacts;		
+		result := c;
+	end
+
+	updateProfileSetting():Profile
+	begin self.status := #Online; end
+
+	viewSettings()
+	begin self.isDeleted := false; end
+	
+/*
+statemachines
+	psm UpdateProfileState
+	states
+		start: initial
+
+		initialised [status = #Online]
+		accessprofileSettings
+		editProfile
+		saveBio
+		savePicture
+		saveUsername
+		savePhonenumber
+		bioSaved: final
+		pictureSaved: final
+		usernameSaved: final
+		phoneNumberSaved: final
+	transitions
+		start -> initialised {create}
+		//initialised -> initialised{}
+		initialised -> accessprofileSettings{viewSettings()}
+
+		accessprofileSettings -> editProfile{updateProfileSetting()}
+		editProfile -> saveBio{updateProfileSetting()}
+		editProfile -> savePicture{updateProfileSetting()}
+		editProfile -> saveUsername{updateProfileSetting()}
+		editProfile -> savePhonenumber{updateProfileSetting()}
+
+		saveBio -> bioSaved{editBio()}
+		savePicture -> pictureSaved{editProfilePicture()}
+		saveUsername -> usernameSaved{editUserName()}
+		savePhonenumber -> phoneNumberSaved{changePhoneNumber()}
+	end
+*/ 
+end 
+
+/*Associations*/
+
+association callAsAMessage between 
+	Call  [1] role call 
+	Message  [*] role message  
+end
+
+composition Calls between
+	Call [*] role call
+	CallLog [0..200] role calllog	
+end
+
+association UserMessage between 
+	Message [*] role message 
+	User [*] role user
+end
+
+association groupAdmin between
+	Administrator [*] role administrator 
+	Group [*] role groupAdmin
+end
+
+association GroupMembers between 
+	User [*] role member 
+	Group [*] role group 
+end
+
+association ForwardedMessage between 
+	User [*] role forwardedFrom
+	Message [*] role forwardedMessage
+end
+
+
+association Phone between 
+	User [1..*] role user
+	Device [1..*] role owns
+end
+
+association Devices between 
+	Profile [1..3] role profile 
+	Device [1..*] role owns
+end
+
+association contactCall between
+	Contact [*] role contact 
+	Call [1..*] role call 
+end 
+
+association contactList between
+	User [*] role user
+	Contact [1..*] role numbers 
+end
+
+association VideoCall between
+	User [1..30] role videoUsers 
+	Call [1] role videoCalls 
+end 
+
+association AudioCall between
+	User [1..30] role audioUsers
+	Call [1] role audioCalls
+end
+
+association SecretChatMessage between
+	User [1] role secretUser
+	SecretChat [1] role secretMessage
+end
+
+association channelMessages between
+	Message [*] role message 
+	Channel [*] role channel  
+end
+
+association chatMessages  between
+	Chat [1] role subscribers 
+	Message [*] role message ordered 
+end
+
+association secretAudioCall  between
+	SecretChat [1] role audioUser 
+	Call [1] role audioCall 
+end
+
+association secretVideoCall  between
+	SecretChat [1] role videoUser 
+	Call [1] role videoCall 
+end
+
+association secretContacts  between
+	Contact [1..*] role numbers  
+	SecretChat [1] role chat 	
+end
+
+association contactMessages  between
+	Contact [1..*] role numberss 
+	Message [*] role message 	
+end
+
+---New Association names 
+association Contacts   between
+	Profile [*] role contactList 
+	Profile [*] role profile 	
+end
+
+association userProfile between
+	Profile [1..3] role profile 
+	User [1..*] role user 		
+end
+
+association PrivacySettings between
+	privacySettings [*] role settings 
+	Profile [1..*] role profile 	
+end
+
+association userAccount between
+	Telegram [1] role account
+	User [1] role users 
+	  	
+end
+
+association groupMessage between
+	Group [0..1] role groupReceiver
+	Message [*] role groupMessage  	
+end
+
+association receiveMessage between
+	Message [*] role messages
+	Profile [0..1] role receiver  	
+end
+
+association sendMessage between
+	Message [*] role message
+	Profile [0..1] role sender   	
+end
+
+association receiveGroupMessage between
+	Group [*] role groups 
+	Profile [0..1] role receiver  	
+end
+
+association sendGroupMessage between
+	Group [*] role group
+	Profile [0..1] role sender   	
+end
+
+association receiver between
+	Receiver[*] role Receiver
+	Message [*] role Message	
+end
+
+association userAdmin between
+	User[*] role user 
+	Administrator [*] role userAdmin	
+end
+
+association userRole between
+	User[*] role userr
+	Role [*] role userRole 
+end
+
+association profileContacts between
+	Profile[*] role profile 
+	Contact [*] role contacts
+end
+
+constraints 
+-- Account Constraints -------
+
+-- A user must be at least age 16
+context User
+inv minAge: age >= 16
+
+-- Username must be a maximum of 32 characters
+context User
+inv maxUserNameCharacters: name.size() <= 32
+
+-- Number of participants in groups can be a maximum of to 20,000 members
+context Group
+inv participants:
+	groupMemberCapacity <= 20000
+
+
+-- Number of bots in groups can be a maximum of to 50
+context Group
+inv groupbots: groupBots <=50
+
+--Chat title length can be up to 128 characters
+context Group
+inv descriptionlength :Description.size() <= 128
+
+-- Administrator Constraints -----
+context Administrator
+inv admin: groupMemberAdmins <=50
+
+--Call constraints--
+--The maximum number of participants in a group voice/ video chat is 30 members.
+
+context Call
+inv videoOrVoiceCalls:  
+	if self.callType = #Video  or self.callType = #Voice 
+	then self.nbrOfPersons <=30
+	else 
+		self.nbrOfPersons <> 30
+	endif 
+
+--Profile constraints--
+--The maximum number of profiles a user can have is 3 
+
+context Profile 
+inv maxProfiles: 
+	self.nbrOfUserProfiles <= 3 
+
+--A Profile Status has to be set to online inorder to make a phone call
+context Profile 
+inv onlineToMakePhoneCall: 
+	self.status = #Online  
+
+--  A group owner can assign up to 49 admins
+context GroupOwner
+inv maxAdminAssigned: 
+	self.userr.userAdmin -> forAll(a| a.isAdmin = true and a.groupMemberAdmins <= 49) 
+
+--  A group owner can assign up to 20 bots 
+context GroupOwner
+inv maxAssignedBots: 
+	self.userr.userAdmin.groupAdmin -> forAll(b | b.groupBots <= 20) 
+
+-- A user can send a message length up to 4096 characters 
+context User
+inv maxMessageLength: 	
+	self.message -> forAll(m| m.characterLength <=4096) 
+
+-- A user can send files up to 2GB in size 
+context User
+inv maxFileSize: 	
+	self.message -> forAll(s |s.fileSizeInGB <= 2) 
+
+
+
+
+

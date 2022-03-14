@@ -1,0 +1,95 @@
+
+reset
+!T := new Telegram()
+!set T.number := '1-876-911-1234'
+!set T.name := 'Tom Walker'
+!set T.age := 12
+
+!C1 := T.createAccount('Tom Walker','1-876-911-1234',24)
+
+!P1 := new Profile()
+!set P1.profilePicture := #Image 
+!set P1.characterCount := 70
+!set P1.isDeleted := false  
+!set P1.nbrOfUserProfiles := 1
+!set P1.userName := '@Tom'
+!set P1.status := #Online  
+
+
+!M1 := P1.searchContact('1-876-852-1234','@glenroylogan','Glenroy Logan')
+!M2 := P1.searchContact('1-876-321-3333','@joshuaKing','Joshua King')
+
+!P2 := new Profile()
+!set P2.profilePicture := #Image 
+!set P2.characterCount := 70
+!set P2.isDeleted := false 
+!set P2.nbrOfUserProfiles := 1
+!set P2.userName := '@Henry'
+!set P2.status := #Online  
+
+
+!P3 := new Profile()
+!set P3.profilePicture := #Image 
+!set P3.characterCount := 70
+!set P3.isDeleted := false 
+!set P3.nbrOfUserProfiles := 1
+!set P3.userName := '@Morgan'
+!set P3.status := #Online  
+
+
+!P4 := new Profile()
+!set P3.profilePicture := #Image 
+!set P3.characterCount := 70
+!set P3.isDeleted := false 
+!set P3.nbrOfUserProfiles := 1
+!set P3.userName := '@Danny'
+!set P3.status := #Offline
+
+!D1 := new Device()
+!set D1.galleryAccessPermission := true 
+!set D1.cameraAccessPermission := true 
+!set D1.microphoneAccessPermission := true 
+
+
+!create D1 :Date
+!set D1.Day := 14
+!set D1.Month := 10
+!set D1.Year := 2021
+!set D1.Hour := 6
+!set D1.Minute := 10
+!set D1.Second := 12
+
+!Call := new Call()
+!set Call.nbrOfPersons := 2
+!set Call.callType := #Video 
+!set Call.status := #Connected 
+
+
+!insert (P1,C1) into userProfile
+!insert (P1,P1) into Contacts
+
+!insert (P2,C1) into userProfile
+!insert (P2,P2) into Contacts
+
+!insert (P3,C1) into userProfile
+!insert (P3,P3) into Contacts
+
+
+!insert (P4,C1) into userProfile
+!insert (P4,P4) into Contacts
+
+!insert (T,C1) into userAccount 
+
+!insert (C1,M1) into contactList
+!insert (C1,M2) into contactList
+
+!insert (C1,Call) into VideoCall
+!insert (M1,Call) into contactCall
+!insert (M2,Call) into contactCall
+
+!insert (P1,D1) into Devices
+!insert (P2,D1) into Devices
+!insert (P3,D1) into Devices
+
+check 
+

@@ -1,0 +1,126 @@
+reset
+
+!create D1 :DateTime
+!set D1.Day := 14
+!set D1.Month := 10
+!set D1.Year := 2021
+!set D1.Hour := 6
+!set D1.Minute := 10
+!set D1.Second := 12
+
+!create D2 :DateTime
+!set D2.Day := 14
+!set D2.Month := 10
+!set D2.Year := 2021
+!set D2.Hour := 7
+!set D1.Minute := 8
+!set D1.Second := 30
+
+!create T1 :Telegram
+!set T1.number := '86802647'
+!set T1.name := 'John Doe'
+!set T1.age := 22
+
+!create U1 :User
+!set U1.number := '8201033'
+!set U1.name := 'Sally John'
+!set U1.age := 17
+
+!create U2 :User
+!set U2.number := '62903321'
+!set U2.name := 'Dave Doe'
+!set U2.age := 28
+
+!create P1 :Profile
+!set P1.profilePicture := Image
+!set P1.characterCount := 11
+!set P1.nbrOfUserProfiles:= 1
+!set P1.userName := 'sj879'
+!set P1.status := Status::Online
+
+
+!create P2 :Profile
+!set P2.profilePicture := Image
+!set P2.characterCount := 11
+!set P2.nbrOfUserProfiles:= 1
+!set P2.userName := 'sj1234'
+!set P2.status := Status::Online
+
+!set DV1:Device
+!set DV1.galleryAccessPermission := True
+!set DV1.cameraAccessPermission := True
+!set DV1.microphoneAccessPermission := True
+
+!set DV2:Device
+!set DV2.galleryAccessPermission := True
+!set DV2.cameraAccessPermission := True
+!set DV2.microphoneAccessPermission := True
+
+
+!create M1 :Message
+!set M1.Media := MediaType::Text
+!set M1.Status := MessageStatus::Delivered
+!set M1.date := D1
+!set M1.chatHistory := ChatHistory::ExportChat
+!set M1.fileSizeinGB : 1
+!set M1.characterLength := 15
+
+
+!create M2 :Message
+!set M2.Media := MediaType::VoiceNote
+!set M2.Status := MessageStatus::Delivered
+!set M2.date := D2
+!set M2.chatHistory := ChatHistory::ExportChat
+!set M1.fileSizeinGB : 1
+!set M2.characterLength := 30
+
+!D1 := new Device()
+!set D1.galleryAccessPermission := true 
+!set D1.cameraAccessPermission := true 
+!set D1.microphoneAccessPermission := true 
+
+!D2 := new Device()
+!set D2.galleryAccessPermission := true 
+!set D2.cameraAccessPermission := true 
+!set D2.microphoneAccessPermission := true 
+
+
+!create Con1 :Contact 
+!set Con1.contactCount := 14
+!set Con1.name := 'Dave Doe'
+!set Con1.username := 'sj1234'
+!set Con1.number := '62903321'
+!set Con1.validNumber := true 
+
+
+!create Con2 :Contact 
+!set Con2.contactCount := 20
+!set Con2.name := 'Sally John'
+!set Con2.username := 'sj879'
+!set Con2.number := '8201033'
+!set Con2.validNumber := true 
+
+!insert (T1,U1) into userAccount
+!insert (T1,U2) into userAccount
+
+!insert (P1,U1) into userProfile
+!insert (P2,U2) into userProfile
+
+
+
+!insert (M1,U1) into SenderMessage
+!insert (M2,U2) into SenderMessage
+
+!insert (U1,D1) into Phone
+!insert (U2,D2) into Phone
+
+!insert (M1,P2) into receiveMessage
+!insert  (M1, P1) into sendMessage
+
+!insert (M2,P1) into receiveMessage
+!insert (M2, P2) into sendMessage
+
+!insert (P1, Con1) into profileContacts
+!insert (P2, Con2) into profileContacts
+
+check

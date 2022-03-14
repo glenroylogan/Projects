@@ -1,0 +1,58 @@
+reset
+
+!create T1:Telegram
+!set T1.number := '546-4789'
+!set T1.name := 'Paulette James'
+!set T1.age := 21
+
+!create D1: Device
+!set D1.galleryAccessPermission := true
+!set D1.cameraAccessPermission := true
+!set D1.microphoneAccessPermission := true
+
+!create D2: Device
+!set D2.galleryAccessPermission := true
+!set D2.cameraAccessPermission := true
+!set D2.microphoneAccessPermission := true
+
+!create U1: User
+!set U1.number := '546-4789'
+!set U1.name := 'Paulettea James'
+!set U1.age := 21
+
+!create P1:Profile
+!set P1.profilePicture:= MediaType::Image
+!set P1.characterCount := 26
+!set P1.isDeleted := true
+!set P1.nbrOfUserProfiles:=3
+!set P1.userName:= 'Paul'
+!set P1.status:= Status::Online
+
+!create P2:Profile
+!set P2.profilePicture:= MediaType::Image
+!set P2.characterCount := 26
+!set P2.isDeleted := true
+!set P2.nbrOfUserProfiles:=3
+!set P2.userName:= 'Deborah'
+!set P2.status:= Status::Online
+
+!create P3:Profile
+!set P3.profilePicture:= MediaType::Image
+!set P3.characterCount := 75
+!set P3.isDeleted := true
+!set P3.nbrOfUserProfiles:=3
+!set P3.userName:= 'Lexi'
+!set P3.status:= Status::Online
+
+!insert(P1,U1) into userProfile
+!insert(P2,U1) into userProfile
+!insert(P3,U1) into userProfile
+
+!insert(U1,D1) into Phone
+!insert(T1,U1) into userAccount
+!insert(P1,D1) into Devices
+!insert(P2,D1) into Devices
+!insert(U1,D2) into Phone
+!insert(P3,D2) into Devices
+check
+
